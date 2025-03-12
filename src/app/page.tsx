@@ -50,6 +50,7 @@ export default function Home() {
           </div>    
           {/* Legal Disclaimer */}
           <p>Not affiliated with ConcernedApe or Stardew Valley</p>
+          <p>Made with ❤️ for the Stardew Valley community</p>
         </footer>
       </div>
     </main>
