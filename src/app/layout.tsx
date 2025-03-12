@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react"
 
 // Load Inter font for better readability
 const inter = Inter({
@@ -28,6 +29,7 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.variable} antialiased`}>
         {children}
+        <Analytics />
       </body>
     </html>
   )
