@@ -3,16 +3,33 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * Stardew Sage API Route Handler
  * 
- * This file handles communication with the Gemini 1.5 Flash API
- * for the Stardew Valley chatbot.
+ * This file implements the server-side API endpoint that connects the chat interface
+ * with the Gemini 1.5 Flash AI model. It handles:
+ * 
+ * 1. Request validation and processing
+ * 2. Secure API key management
+ * 3. Prompt engineering for optimal AI responses
+ * 4. Communication with the Gemini API
+ * 5. Response formatting and error handling
+ * 
+ * The endpoint is designed to be secure, efficient, and easily customizable to work with different AI models if needed.
  */
 
-// Get API key from environment variables
+// Get API key from environment variables for secure access
 const apiKey = process.env.GEMINI_API_KEY;
 
+/**
+ * POST Request Handler
+ * 
+ * Processes incoming chat messages, sends them to the Gemini API,
+ * and returns the AI's response.
+ * 
+ * @param request - The incoming Next.js request object
+ * @returns A JSON response containing either the AI's response or an error message
+ */
 export async function POST(request: NextRequest) {
   try {
-    // Validate API key configuration
+    // Validate API key configuration to prevent runtime errors
     if (!apiKey) {
       console.error('Missing Gemini API key in environment variables');
       return NextResponse.json(
@@ -25,6 +42,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const { message } = body;
 
+    // Ensure the message is valid before proceeding
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
         { error: 'Invalid message format. Please provide a text message.' },
@@ -88,15 +106,24 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Helper function to call the Gemini API
+ * Gemini API Communication Helper
  * 
- * @param prompt - The prompt to send to Gemini
- * @param apiKey - The Gemini API key
+ * Handles the direct communication with Google's Gemini API, including:
+ * - Formatting the request according to Gemini's API specifications
+ * - Setting appropriate generation parameters for optimal responses
+ * - Processing and validating the API response
+ * - Error handling for API-specific issues
+ * 
+ * @param prompt - The fully formatted prompt to send to Gemini
+ * @param apiKey - The Gemini API key for authentication
  * @returns The text response from Gemini
+ * @throws Error if the API request fails or returns an unexpected format
  */
 async function fetchGeminiResponse(prompt: string, apiKey: string): Promise<string> {
+  // Construct the API endpoint URL with the API key
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
+  // Make the API request with proper headers and body format
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -112,28 +139,32 @@ async function fetchGeminiResponse(prompt: string, apiKey: string): Promise<stri
           ],
         },
       ],
-      // Optional parameters for better response quality
+      // Generation parameters to control the AI's output quality and style
+      // These can be adjusted to change the AI's behavior
       generationConfig: {
-        temperature: 0.5,
-        topP: 0.8,
-        topK: 40,
-        maxOutputTokens: 2048,
+        temperature: 0.5,  // Controls randomness (0.0 = deterministic, 1.0 = creative)
+        topP: 0.8,         // Controls diversity of word selection
+        topK: 40,          // Limits token selection to top K options
+        maxOutputTokens: 2048, // Maximum response length
       },
     }),
   });
 
+  // Handle unsuccessful API responses
   if (!response.ok) {
     const errorData = await response.json();
     console.error('Gemini API error:', errorData);
     throw new Error(`Gemini API returned status ${response.status}: ${JSON.stringify(errorData)}`);
   }
 
+  // Parse the successful response
   const data = await response.json();
   
-  // Extract the response text from Gemini's response
+  // Extract and validate the response text from Gemini's response structure
   if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
     throw new Error('Unexpected response format from Gemini API');
   }
   
+  // Return the extracted text response
   return data.candidates[0].content.parts[0].text;
 }

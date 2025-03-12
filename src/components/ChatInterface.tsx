@@ -4,7 +4,14 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 
-// Define types for better type safety
+/**
+ * Message Type Definition
+ * 
+ * Defines the structure of chat messages exchanged between the user and the assistant.
+ * - role: Identifies whether the message is from the 'user' or the 'assistant'
+ * - content: The actual text content of the message
+ * - timestamp: Optional timestamp when the message was created
+ */
 type Message = {
   role: 'user' | 'assistant';
   content: string;
@@ -14,15 +21,36 @@ type Message = {
 /**
  * ChatInterface Component
  * 
- * A responsive chat interface for the Stardew Valley chatbot that handles:
- * - Message display with proper styling and markdown formatting
- * - User input and submission
- * - API communication with Gemini
- * - Loading states and error handling
- * - Responsive design for all device sizes
+ * A comprehensive chat interface for the Stardew Valley assistant that provides:
+ * 
+ * 1. User Experience Features:
+ *    - Real-time message display with user and assistant avatars
+ *    - Markdown rendering for rich text formatting in responses
+ *    - Automatic scrolling to the newest messages
+ *    - Visual loading indicators during API requests
+ *    - Error handling with user-friendly messages
+ * 
+ * 2. Technical Implementation:
+ *    - React state management for messages, input, loading states
+ *    - API communication with the Gemini model
+ *    - Responsive design using Tailwind CSS
+ *    - Optimized rendering with proper React patterns
+ * 
+ * 3. Styling:
+ *    - Custom Stardew Valley-inspired visual design
+ *    - Responsive layout for all device sizes
+ *    - Animated message transitions
  */
 export default function ChatInterface() {
-  // State management
+  // =========================================================================
+  // State Management
+  // =========================================================================
+  
+  /**
+   * Messages State
+   * Stores the conversation history between user and assistant
+   * Initialized with a welcome message from the assistant
+   */
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -30,41 +58,92 @@ export default function ChatInterface() {
       timestamp: new Date(),
     },
   ]);
+  
+  /**
+   * Input State
+   * Tracks the current value of the user's input field
+   */
   const [input, setInput] = useState('');
+  
+  /**
+   * Loading State
+   * Indicates whether a request to the API is in progress
+   * Used to display loading indicators and disable the input field
+   */
   const [isLoading, setIsLoading] = useState(false);
+  
+  /**
+   * Error State
+   * Stores error messages when API requests fail
+   * Displayed to the user in a friendly format
+   */
   const [error, setError] = useState<string | null>(null);
   
-  // Ref for auto-scrolling to bottom of chat
+  // =========================================================================
+  // Refs for DOM Manipulation
+  // =========================================================================
+  
+  /**
+   * Reference to the end of the messages container
+   * Used for auto-scrolling to the newest message
+   */
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  /**
+   * Reference to the chat container
+   * Used for scrolling and container manipulation
+   */
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when messages change
+  // =========================================================================
+  // Effects
+  // =========================================================================
+  
+  /**
+   * Auto-scroll Effect
+   * Scrolls to the bottom of the chat when new messages are added
+   * Uses smooth scrolling for a better user experience
+   */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // =========================================================================
+  // Event Handlers
+  // =========================================================================
+  
   /**
-   * Handles form submission and API communication
+   * Form Submission Handler
+   * 
+   * Processes the user's message submission:
+   * 1. Prevents default form submission behavior
+   * 2. Validates the input to ensure it's not empty
+   * 3. Adds the user's message to the chat
+   * 4. Sends the message to the API
+   * 5. Handles the response and any errors
+   * 6. Updates the UI accordingly
+   * 
+   * @param e - The form submission event
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate input
+    // Validate input - don't submit if empty
     if (!input.trim()) return;
 
-    // Add user message to chat
+    // Add user message to chat immediately for better UX
     const userMessage: Message = { 
       role: 'user', 
       content: input,
       timestamp: new Date()
     };
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-    setError(null);
+    setInput(''); // Clear input field
+    setIsLoading(true); // Show loading indicator
+    setError(null); // Clear any previous errors
 
     try {
-      // Send message to API
+      // Send message to API endpoint
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -73,7 +152,7 @@ export default function ChatInterface() {
         body: JSON.stringify({ message: input }),
       });
 
-      // Handle API errors
+      // Handle API errors with appropriate messaging
       if (!response.ok) {
         throw new Error('Failed to get response from Stardew Sage');
       }
@@ -92,12 +171,29 @@ export default function ChatInterface() {
       console.error('Error:', err);
       setError('Sorry, something went wrong. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Hide loading indicator
     }
   };
 
+  // =========================================================================
+  // UI Rendering Functions
+  // =========================================================================
+  
   /**
-   * Renders an individual message with appropriate styling
+   * Message Renderer
+   * 
+   * Renders an individual message with appropriate styling based on the sender:
+   * - User messages: Right-aligned with blue background
+   * - Assistant messages: Left-aligned with paper background and markdown support
+   * 
+   * Each message includes:
+   * - Sender avatar (user or assistant)
+   * - Message content with appropriate formatting
+   * - Timestamp showing when the message was sent
+   * 
+   * @param message - The message object to render
+   * @param index - The index of the message in the messages array
+   * @returns A JSX element representing the message
    */
   const renderMessage = (message: Message, index: number) => {
     const isUser = message.role === 'user';
@@ -124,7 +220,7 @@ export default function ChatInterface() {
           </div>
         )}
         
-        {/* Message content */}
+        {/* Message content container with conditional styling based on sender */}
         <div 
           className={`
             max-w-[80%] sm:max-w-[70%] rounded-stardew-lg p-3 shadow-stardew-sm
@@ -134,7 +230,7 @@ export default function ChatInterface() {
             }
           `}
         >
-          {/* Message content with markdown support */}
+          {/* Message content with markdown support for assistant messages */}
           <div className={`mb-1 ${isUser ? 'font-pixel text-base' : 'font-body text-base'}`}>
             {isUser ? (
               <p>{message.content}</p>
@@ -147,7 +243,7 @@ export default function ChatInterface() {
             )}
           </div>
           
-          {/* Timestamp */}
+          {/* Timestamp display */}
           {message.timestamp && (
             <div className={`text-xs ${isUser ? 'text-stardew-blue-100' : 'text-stardew-brown-400'} text-right`}>
               {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -173,6 +269,9 @@ export default function ChatInterface() {
     );
   };
 
+  // =========================================================================
+  // Main Component Render
+  // =========================================================================
   return (
     <div className="flex flex-col h-[80vh] sm:h-[70vh] md:h-[75vh] max-w-3xl mx-auto bg-[#F6F1E5] rounded-stardew-lg overflow-hidden shadow-stardew-xl border-2 border-menu-border">
       {/* Header with Stardew Sage icon - Displayed at the top of the chat interface */}
@@ -195,12 +294,12 @@ export default function ChatInterface() {
         </div>
       </div>
       
-      {/* Messages Container */}
+      {/* Messages Container - Scrollable area that displays all messages */}
       <div 
         ref={chatContainerRef}
         className="flex-1 p-3 sm:p-4 overflow-y-auto bg-paper-texture bg-repeat bg-[#F6F1E5] bg-opacity-90 space-y-2"
       >
-        {/* Render all messages */}
+        {/* Render all messages using the renderMessage function */}
         {messages.map(renderMessage)}
         
         {/* Loading indicator with chicken icon - Displayed when waiting for a response */}
@@ -251,12 +350,13 @@ export default function ChatInterface() {
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Input Form */}
+      {/* Input Form - User input area at the bottom of the chat */}
       <form 
         onSubmit={handleSubmit} 
         className="p-3 sm:p-4 border-t-2 border-menu-border bg-menu-paper"
       >
         <div className="flex items-center">
+          {/* Text input field */}
           <input
             type="text"
             value={input}
@@ -265,6 +365,8 @@ export default function ChatInterface() {
             className="flex-1 p-2 sm:p-3 rounded-stardew-lg rounded-r-none border-2 border-r-0 border-menu-border focus:outline-none focus:border-stardew-blue-400 font-body text-stardew-brown-800 placeholder-stardew-brown-400 bg-white transition-colors"
             disabled={isLoading}
           />
+          
+          {/* Submit button */}
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
