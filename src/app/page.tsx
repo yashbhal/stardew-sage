@@ -25,9 +25,17 @@ export default function Home() {
           </h1>
           {/* Application Tagline */}
           <p className="text-xl text-stardew-brown-600 font-body">
-            Your friendly Stardew Valley assistant
+            Your friendly Stardew Valley AI chatbot assistant
           </p>
         </div>
+        
+        {/* SEO-friendly introduction - concise version */}
+        <section className="mb-6 text-stardew-brown-600 font-body text-center">
+          <p className="mb-2">
+            Get instant answers to all your Stardew Valley questions from the Stadew Sage. <br />
+            An AI chatbot that is an expert on farming, mining, fishing, villagers, and more!
+          </p>
+        </section>
         
         {/* Main Chat Interface Component */}
         <div className="animate-popIn">
