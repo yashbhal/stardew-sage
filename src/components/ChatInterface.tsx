@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
+import { FeedbackButtons } from '@/components/FeedbackButtons'
 
 /**
  * Message Type Definition
@@ -379,6 +380,7 @@ export default function ChatInterface() {
             </svg>
           </button>
         </div>
+        <FeedbackButtons />
       </form>
     </div>
   );
