@@ -12,8 +12,8 @@ export function FeedbackButtons() {
   const [isLoading, setIsLoading] = useState(false)
   const [fingerprint, setFingerprint] = useState<string>('')
 
+  // Initialize user fingerprint and load voted status on mount
   useEffect(() => {
-    // Initialize fingerprint
     const stored = localStorage.getItem(STORAGE_KEY)
     const newFingerprint = stored || uuidv4()
     if (!stored) {
@@ -21,7 +21,6 @@ export function FeedbackButtons() {
     }
     setFingerprint(newFingerprint)
 
-    // Load voted status
     const voted = localStorage.getItem(VOTED_KEY)
     if (voted) {
       setVotedButtons(JSON.parse(voted))
@@ -34,6 +33,7 @@ export function FeedbackButtons() {
       .catch(console.error)
   }, [])
 
+  // Handle button click and update votes
   const handleVote = useCallback(async (type: ButtonType) => {
     if (votedButtons.includes(type) || isLoading || !fingerprint) return
 
@@ -65,62 +65,92 @@ export function FeedbackButtons() {
   }, [votedButtons, isLoading, fingerprint])
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-8 px-4">
-      <h2 className="text-xl font-semibold text-center mb-4 text-amber-900">
-        How do you like Stardew Sage?
-      </h2>
-      
-      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-        <button
-          onClick={() => handleVote('love_website')}
-          disabled={votedButtons.includes('love_website') || isLoading}
-          className={`
-            px-6 py-3 rounded-lg font-medium text-sm
-            border-2 border-amber-700
-            transition-all duration-200
-            focus:outline-none focus:ring-2 focus:ring-amber-500
-            ${votedButtons.includes('love_website')
-              ? 'bg-amber-100 text-amber-700 cursor-not-allowed'
-              : 'bg-amber-500 hover:bg-amber-600 text-white hover:border-amber-600'
-            }
-          `}
-          aria-label="I love the website"
-        >
-          <span className="flex items-center gap-2">
-            <span>I love the website</span>
-            <span className="bg-amber-600/20 px-2 py-0.5 rounded-md border border-amber-600/30">
-              {counts.loveWebsite}
+    <div className="w-full max-w-2xl mx-auto opacity-90 hover:opacity-100 transition-all duration-300">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+        <p className="text-xs sm:text-sm font-pixel text-stardew-brown-600 whitespace-nowrap">
+          How do you like Stardew Sage?
+        </p>
+        
+        <div className="flex flex-row gap-2 justify-center items-center">
+          <button
+            onClick={() => handleVote('love_website')}
+            disabled={votedButtons.includes('love_website') || isLoading}
+            className={`
+              min-w-[100px] sm:min-w-[120px]
+              px-3 py-1.5 rounded text-xs font-pixel
+              border border-menu-border
+              transition-all duration-300 ease-in-out
+              transform hover:scale-[1.02] active:scale-[0.98]
+              focus:outline-none focus:ring-1 focus:ring-stardew-blue-400
+              ${votedButtons.includes('love_website')
+                ? 'bg-stardew-green-100/50 text-stardew-brown-500 cursor-not-allowed border-stardew-green-200'
+                : 'bg-menu-paper hover:bg-gradient-to-r hover:from-stardew-green-50 hover:to-white text-stardew-brown-800 hover:border-stardew-green-300 hover:shadow-stardew-sm'
+              }
+            `}
+            aria-label="I love the website"
+          >
+            <span className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1">
+                <span>Love it!</span>
+                {!votedButtons.includes('love_website') && (
+                  <span className="text-stardew-green-600">♥</span>
+                )}
+              </span>
+              <span className={`
+                px-2 py-0.5 rounded text-[10px] border min-w-[24px]
+                transition-colors duration-300
+                ${votedButtons.includes('love_website')
+                  ? 'bg-white/60 border-stardew-green-200 text-stardew-green-700'
+                  : 'bg-white/80 border-menu-border text-stardew-brown-700'
+                }
+              `}>
+                {counts.loveWebsite}
+              </span>
             </span>
-          </span>
-        </button>
+          </button>
 
-        <button
-          onClick={() => handleVote('want_app')}
-          disabled={votedButtons.includes('want_app') || isLoading}
-          className={`
-            px-6 py-3 rounded-lg font-medium text-sm
-            border-2 border-emerald-700
-            transition-all duration-200
-            focus:outline-none focus:ring-2 focus:ring-emerald-500
-            ${votedButtons.includes('want_app')
-              ? 'bg-emerald-100 text-emerald-700 cursor-not-allowed'
-              : 'bg-emerald-500 hover:bg-emerald-600 text-white hover:border-emerald-600'
-            }
-          `}
-          aria-label="I would prefer a mobile app"
-        >
-          <span className="flex items-center gap-2">
-            <span>I would prefer a mobile app</span>
-            <span className="bg-emerald-600/20 px-2 py-0.5 rounded-md border border-emerald-600/30">
-              {counts.wantApp}
+          <button
+            onClick={() => handleVote('want_app')}
+            disabled={votedButtons.includes('want_app') || isLoading}
+            className={`
+              min-w-[100px] sm:min-w-[120px]
+              px-3 py-1.5 rounded text-xs font-pixel
+              border border-menu-border
+              transition-all duration-300 ease-in-out
+              transform hover:scale-[1.02] active:scale-[0.98]
+              focus:outline-none focus:ring-1 focus:ring-stardew-blue-400
+              ${votedButtons.includes('want_app')
+                ? 'bg-stardew-blue-100/50 text-stardew-brown-500 cursor-not-allowed border-stardew-blue-200'
+                : 'bg-menu-paper hover:bg-gradient-to-r hover:from-stardew-blue-50 hover:to-white text-stardew-brown-800 hover:border-stardew-blue-300 hover:shadow-stardew-sm'
+              }
+            `}
+            aria-label="I would prefer a mobile app"
+          >
+            <span className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1">
+                <span>Want app</span>
+                {!votedButtons.includes('want_app') && (
+                  <span className="text-stardew-blue-600">📱</span>
+                )}
+              </span>
+              <span className={`
+                px-2 py-0.5 rounded text-[10px] border min-w-[24px]
+                transition-colors duration-300
+                ${votedButtons.includes('want_app')
+                  ? 'bg-white/60 border-stardew-blue-200 text-stardew-blue-700'
+                  : 'bg-white/80 border-menu-border text-stardew-brown-700'
+                }
+              `}>
+                {counts.wantApp}
+              </span>
             </span>
-          </span>
-        </button>
+          </button>
+        </div>
       </div>
 
       {votedButtons.length > 0 && (
-        <p className="text-center mt-4 text-gray-600 text-sm">
-          Thank you for your feedback!
+        <p className="text-[10px] text-center mt-2 text-stardew-brown-500 font-pixel animate-fade-in">
+          Thanks for your feedback!
         </p>
       )}
     </div>

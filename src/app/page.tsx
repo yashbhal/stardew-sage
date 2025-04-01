@@ -15,16 +15,16 @@ import Image from 'next/image';
  */
 export default function Home() {
   return (
-    <main className="min-h-screen p-4 md:p-8 bg-paper-texture bg-repeat bg-[#F6F1E5]">
+    <main className="min-h-screen p-4 md:p-8 bg-gradient-to-b from-stardew-brown-100 to-[#F6F1E5] bg-paper-texture bg-repeat">
       <div className="max-w-5xl mx-auto">
         {/* Header Section */}
-        <div className="text-center mb-8 animate-slideUp">
+        <div className="text-center mb-8 animate-slideUp bg-menu-paper border-2 border-menu-border rounded-stardew-lg p-6 shadow-stardew">
           {/* Application Title */}
-          <h1 className="text-4xl md:text-5xl font-pixel text-stardew-brown-700 mb-2 tracking-pixel">
+          <h1 className="text-4xl md:text-5xl font-pixel text-stardew-brown-600 mb-4 tracking-pixel">
             Stardew Sage
           </h1>
           {/* Application Tagline */}
-          <p className="text-xl text-stardew-brown-600 font-body">
+          <p className="text-xl text-stardew-brown-500 font-body">
             Your friendly Stardew Valley AI chatbot assistant
           </p>
         </div>

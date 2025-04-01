@@ -104,11 +104,11 @@ body {
 }
 
 .prose code {
-  @apply font-mono bg-stardew-brown-100 px-1 py-0.5 rounded text-stardew-brown-800;
+  @apply font-mono bg-menu-paper px-1 py-0.5 rounded text-stardew-brown-800;
 }
 
 .prose blockquote {
-  @apply border-l-4 border-stardew-brown-300 pl-4 italic text-stardew-brown-700;
+  @apply border-l-4 border-menu-border pl-4 italic text-stardew-brown-800;
 }
 
 /* Responsive adjustments */
