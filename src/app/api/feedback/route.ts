@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase/client'
 import type { ButtonType } from '@/lib/supabase/types'
 
+interface FeedbackCount {
+  count: number
+}
+
+interface FeedbackCounts {
+  loveWebsite: number
+  wantApp: number
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { type, fingerprint } = await request.json()
@@ -83,18 +92,18 @@ export async function GET() {
   }
 }
 
-async function getVoteCounts() {
+async function getVoteCounts(): Promise<{ data: FeedbackCounts | null; error: Error | null }> {
   const { data: loveWebsite, error: error1 } = await supabase
     .from('feedback_clicks')
     .select('count')
     .eq('button_type', 'love_website' as ButtonType)
-    .single()
+    .single<FeedbackCount>()
 
   const { data: wantApp, error: error2 } = await supabase
     .from('feedback_clicks')
     .select('count')
     .eq('button_type', 'want_app' as ButtonType)
-    .single()
+    .single<FeedbackCount>()
 
   if (error1 || error2) {
     return {
@@ -105,8 +114,8 @@ async function getVoteCounts() {
 
   return {
     data: {
-      loveWebsite: (loveWebsite as any)?.count || 0,
-      wantApp: (wantApp as any)?.count || 0,
+      loveWebsite: loveWebsite?.count || 0,
+      wantApp: wantApp?.count || 0,
     },
     error: null
   }
