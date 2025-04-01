@@ -2,42 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase/client'
 import type { ButtonType } from '@/lib/supabase/types'
 
-export async function GET() {
-  try {
-    const { data: loveWebsite, error: error1 } = await supabase
-      .from('feedback_clicks')
-      .select('count')
-      .eq('button_type', 'love_website')
-      .single()
-
-    const { data: wantApp, error: error2 } = await supabase
-      .from('feedback_clicks')
-      .select('count')
-      .eq('button_type', 'want_app')
-      .single()
-
-    if (error1 || error2) {
-      throw new Error('Failed to fetch feedback counts')
-    }
-
-    return NextResponse.json({
-      loveWebsite: loveWebsite?.count || 0,
-      wantApp: wantApp?.count || 0,
-    })
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch feedback counts' },
-      { status: 500 }
-    )
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { type, fingerprint } = await request.json()
     
     if (!type || !fingerprint || 
-        !['love_website', 'want_app'].includes(type)) {
+        !['love_website', 'want_app'].includes(type as string)) {
       return NextResponse.json(
         { error: 'Invalid request' },
         { status: 400 }
@@ -48,7 +18,7 @@ export async function POST(request: NextRequest) {
     const { data: existing } = await supabase
       .from('feedback_clicks')
       .select('id')
-      .eq('button_type', type)
+      .eq('button_type', type as ButtonType)
       .eq('user_fingerprint', fingerprint)
       .single()
 
@@ -59,32 +29,85 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Insert new vote
+    // Record the new vote
     const { error: insertError } = await supabase
       .from('feedback_clicks')
-      .insert([
-        {
-          button_type: type as ButtonType,
-          user_fingerprint: fingerprint,
-        }
-      ])
+      .insert({
+        button_type: type as ButtonType,
+        user_fingerprint: fingerprint
+      })
 
     if (insertError) {
-      throw insertError
+      console.error('Error recording vote:', insertError)
+      return NextResponse.json(
+        { error: 'Failed to record vote' },
+        { status: 500 }
+      )
     }
 
     // Get updated counts
-    const { data: counts } = await supabase
-      .from('feedback_clicks')
-      .select('button_type, count')
-      .eq('button_type', type)
-      .single()
+    const { data: counts, error: countError } = await getVoteCounts()
 
-    return NextResponse.json({ count: counts?.count || 1 })
+    if (countError) {
+      return NextResponse.json(
+        { error: 'Vote recorded but failed to fetch updated counts' },
+        { status: 200 }
+      )
+    }
+
+    return NextResponse.json(counts)
   } catch (error) {
+    console.error('Error processing feedback:', error)
     return NextResponse.json(
-      { error: 'Failed to submit feedback' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
+  }
+}
+
+export async function GET() {
+  try {
+    const { data: counts, error } = await getVoteCounts()
+
+    if (error) {
+      throw error
+    }
+
+    return NextResponse.json(counts)
+  } catch (error) {
+    console.error('Error fetching feedback counts:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch feedback counts' },
+      { status: 500 }
+    )
+  }
+}
+
+async function getVoteCounts() {
+  const { data: loveWebsite, error: error1 } = await supabase
+    .from('feedback_clicks')
+    .select('count')
+    .eq('button_type', 'love_website' as ButtonType)
+    .single()
+
+  const { data: wantApp, error: error2 } = await supabase
+    .from('feedback_clicks')
+    .select('count')
+    .eq('button_type', 'want_app' as ButtonType)
+    .single()
+
+  if (error1 || error2) {
+    return {
+      data: null,
+      error: new Error('Failed to fetch feedback counts')
+    }
+  }
+
+  return {
+    data: {
+      loveWebsite: (loveWebsite as any)?.count || 0,
+      wantApp: (wantApp as any)?.count || 0,
+    },
+    error: null
   }
 }

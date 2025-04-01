@@ -5,6 +5,7 @@ export interface FeedbackClick {
   button_type: ButtonType
   user_fingerprint: string
   created_at: string
+  count?: number // For aggregation queries
 }
 
 export interface Database {
@@ -12,8 +13,8 @@ export interface Database {
     Tables: {
       feedback_clicks: {
         Row: FeedbackClick
-        Insert: Omit<FeedbackClick, 'id' | 'created_at'>
-        Update: Partial<Omit<FeedbackClick, 'id' | 'created_at'>>
+        Insert: Omit<FeedbackClick, 'id' | 'created_at' | 'count'>
+        Update: Partial<Omit<FeedbackClick, 'id' | 'created_at' | 'count'>>
       }
     }
   }

@@ -20,6 +20,8 @@
 *.pem
 .vscode/
 .idea/
+*.swp
+*~
 
 # debug
 npm-debug.log*
@@ -46,15 +48,35 @@ next-env.d.ts
 /supabase/.branches/
 /supabase/seed.sql
 .supabase/
+supabase/
+**/supabase/config.toml
+**/supabase/.env*
+**/supabase/secrets.*
 
-# Cache and temp files
-.cache/
-*.log
-*.swp
-*~
-
-# API keys and secrets
-**/credentials.*
-**/service-account.*
+# Database and API keys
 **/*.key
 **/*.pem
+**/credentials.*
+**/service-account.*
+**/*config*.json
+**/*secrets*.json
+**/*auth*.json
+
+# Cache and logs
+.cache/
+*.log
+/logs
+**/.env.me
+**/local.settings.json
+
+# Security and sensitive data
+**/*private*
+**/*secret*
+**/*password*
+**/*credential*
+**/*token*
+**/*key*
+**/*auth*
+**/*login*
+**/*access*
+**/.ssh/
