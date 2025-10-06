@@ -13,6 +13,13 @@ type Message = {
   timestamp?: Date;
 };
 
+type SavedTip = {
+  id: string;
+  content: string;
+  timestamp?: string | null;
+  savedAt: string;
+};
+
 const PROMPT_POOL = [
   'Best crops for Spring year 1?',
   'Optimal Spring crop rotations?',
@@ -27,6 +34,7 @@ const PROMPT_POOL = [
 ] as const;
 
 const PROMPT_COUNT = 3;
+const SAVED_TIPS_STORAGE_KEY = 'stardew-sage-saved-tips';
 
 /**
  * ChatInterface Component
@@ -50,12 +58,15 @@ export default function ChatInterface() {
   const [activePrompt, setActivePrompt] = useState<string | null>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [savedTips, setSavedTips] = useState<SavedTip[]>([]);
+  const [isSavedTipsOpen, setIsSavedTipsOpen] = useState(false);
   
   // Refs for DOM manipulation
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -78,6 +89,29 @@ export default function ChatInterface() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(SAVED_TIPS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as SavedTip[];
+        setSavedTips(Array.isArray(parsed) ? parsed : []);
+      }
+    } catch (storageError) {
+      console.error('Failed to load saved tips from storage', storageError);
+    } finally {
+      isInitialLoadRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isInitialLoadRef.current) return;
+    try {
+      localStorage.setItem(SAVED_TIPS_STORAGE_KEY, JSON.stringify(savedTips));
+    } catch (storageError) {
+      console.error('Failed to persist saved tips', storageError);
+    }
+  }, [savedTips]);
 
   useEffect(() => {
     return () => {
@@ -177,13 +211,61 @@ export default function ChatInterface() {
     await sendMessage(input);
   };
 
-  const promptSuggestions = useMemo(() => {
+  const handleToggleBookmark = (messageKey: string, message: Message) => {
+    if (!message.content.trim()) return;
+
+    setSavedTips(prev => {
+      const exists = prev.find(tip => tip.content === message.content);
+      if (exists) {
+        return prev.filter(tip => tip.content !== message.content);
+      }
+
+      const timestampIso = message.timestamp instanceof Date
+        ? message.timestamp.toISOString()
+        : (typeof message.timestamp === 'string' ? message.timestamp : null);
+
+      const newTip: SavedTip = {
+        id: messageKey || (typeof window !== 'undefined' && window.crypto?.randomUUID ? window.crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
+        content: message.content,
+        timestamp: timestampIso,
+        savedAt: new Date().toISOString(),
+      };
+
+      return [newTip, ...prev];
+    });
+  };
+
+  const handleRemoveTip = (tipId: string) => {
+    setSavedTips(prev => prev.filter(tip => tip.id !== tipId));
+  };
+
+  const handleClearSavedTips = () => {
+    setSavedTips([]);
+  };
+
+  const formatSavedTimestamp = (iso?: string | null) => {
+    if (!iso) return '';
+    const parsed = new Date(iso);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const [promptSuggestions, setPromptSuggestions] = useState<Array<typeof PROMPT_POOL[number]>>(
+    () => PROMPT_POOL.slice(0, PROMPT_COUNT)
+  );
+
+  useEffect(() => {
     const pool = [...PROMPT_POOL];
     for (let i = pool.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    return pool.slice(0, PROMPT_COUNT);
+    setPromptSuggestions(pool.slice(0, PROMPT_COUNT));
   }, []);
 
   const handlePromptClick = async (prompt: typeof PROMPT_POOL[number]) => {
@@ -202,6 +284,7 @@ export default function ChatInterface() {
   const renderMessage = (message: Message, index: number) => {
     const isUser = message.role === 'user';
     const messageKey = message.timestamp ? `${message.role}-${message.timestamp.toISOString()}` : `${message.role}-${index}`;
+    const isBookmarked = savedTips.some(tip => tip.content === message.content);
 
     return (
       <article
@@ -243,42 +326,61 @@ export default function ChatInterface() {
             )}
           </div>
           
-          {/* Timestamp */}
-          {message.timestamp && (
-            <div className={`mt-2 flex items-center justify-end gap-2 text-xs ${isUser ? 'text-stardew-blue-100' : 'text-stardew-brown-400'}`}>
-              {!isUser && (
-                <>
-                  {copiedMessageId === messageKey && (
-                    <span className="text-[9px] font-body text-stardew-brown-500" aria-live="polite">
-                      Copied!
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleCopyMessage(messageKey, message.content)}
-                    className="inline-flex h-6 w-6 items-center justify-center rounded-stardew-sm border border-menu-border bg-white/80 text-stardew-brown-500 transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-stardew-blue-400 focus:ring-offset-1 focus:ring-offset-menu-paper"
-                    aria-label="Copy assistant response"
+          <div className={`mt-2 flex items-center justify-end gap-2 text-xs ${isUser ? 'text-stardew-blue-100' : 'text-stardew-brown-400'}`}>
+            {!isUser && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleToggleBookmark(messageKey, message)}
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-stardew-sm border transition-colors focus:outline-none focus:ring-2 focus:ring-stardew-blue-400 focus:ring-offset-1 focus:ring-offset-menu-paper ${isBookmarked ? 'bg-stardew-gold-100 border-stardew-gold-300 text-stardew-gold-600' : 'bg-white/80 border-menu-border text-stardew-brown-500 hover:bg-white'}`}
+                  aria-label={isBookmarked ? 'Remove from saved tips' : 'Save this tip'}
+                  aria-pressed={isBookmarked}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="h-3.5 w-3.5"
+                    aria-hidden="true"
+                    focusable="false"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      className="h-3.5 w-3.5"
-                      aria-hidden="true"
-                      focusable="false"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"
-                      />
-                    </svg>
-                  </button>
-                </>
-              )}
+                    <path
+                      fill="currentColor"
+                      d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.62L12 2 9.19 8.62 2 9.24l5.46 4.73L5.82 21z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCopyMessage(messageKey, message.content)}
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-stardew-sm border border-menu-border bg-white/80 text-stardew-brown-500 transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-stardew-blue-400 focus:ring-offset-1 focus:ring-offset-menu-paper"
+                  aria-label="Copy assistant response"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="h-3.5 w-3.5"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"
+                    />
+                  </svg>
+                </button>
+                {copiedMessageId === messageKey && (
+                  <span className="text-[9px] font-body text-stardew-brown-500" aria-live="polite">
+                    Copied!
+                  </span>
+                )}
+              </>
+            )}
+            {message.timestamp && (
               <time>
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </time>
-            </div>
-          )}
+            )}
+          </div>
         </div>
         
         {/* User avatar */}
@@ -303,6 +405,67 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 min-h-[100dvh]">
+      <section className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
+          <div className="flex items-center gap-2">
+            {savedTips.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearSavedTips}
+                className="text-xs sm:text-sm font-pixel tracking-pixel text-stardew-red-500 hover:text-stardew-red-600 focus:outline-none focus:ring-2 focus:ring-stardew-red-300 focus:ring-offset-1 focus:ring-offset-menu-paper"
+              >
+                Clear all
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsSavedTipsOpen(prev => !prev)}
+              className={`inline-flex items-center justify-center gap-1 rounded-stardew-lg border-2 border-menu-border px-3 py-1.5 font-pixel text-xs sm:text-sm transition-colors ${isSavedTipsOpen ? 'bg-stardew-green-100 text-stardew-green-700' : 'bg-menu-paper hover:bg-stardew-green-50 text-stardew-brown-700'}`}
+              aria-expanded={isSavedTipsOpen}
+              aria-controls="saved-tips-panel"
+            >
+              {isSavedTipsOpen ? 'Hide saved tips' : 'Show saved tips'}
+              <span className="text-[10px] sm:text-xs font-body text-stardew-brown-500">({savedTips.length})</span>
+            </button>
+          </div>
+        </div>
+
+        {isSavedTipsOpen && (
+          <div
+            id="saved-tips-panel"
+            className="mt-3 rounded-stardew-lg border-2 border-menu-border bg-menu-paper p-3 sm:p-4 shadow-stardew-sm"
+            role="region"
+            aria-label="Saved tips list"
+          >
+            {savedTips.length === 0 ? (
+              <p className="text-sm font-body text-stardew-brown-500">No tips saved yet. Tap the star icon on helpful responses to bookmark them.</p>
+            ) : (
+              <ul className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                {savedTips.map(tip => (
+                  <li key={tip.id} className="rounded-stardew border border-menu-border bg-white/90 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="text-sm font-body text-stardew-brown-700 whitespace-pre-wrap">{tip.content}</div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTip(tip.id)}
+                        className="shrink-0 rounded-stardew-sm border border-stardew-brown-200 bg-stardew-brown-50 px-2 py-1 text-[10px] font-pixel uppercase tracking-pixel text-stardew-brown-600 hover:bg-stardew-brown-100 focus:outline-none focus:ring-1 focus:ring-stardew-blue-400"
+                        aria-label="Remove saved tip"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-[10px] font-body text-stardew-brown-400">
+                      <span>Saved {formatSavedTimestamp(tip.savedAt)}</span>
+                      {tip.timestamp && <span>Original {formatSavedTimestamp(tip.timestamp)}</span>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </section>
+
       {/* Chat interface */}
       <section
         className="flex flex-col h-[85vh] sm:h-[80vh] bg-[#F6F1E5] rounded-stardew-lg overflow-hidden shadow-stardew-xl border-2 border-menu-border"
