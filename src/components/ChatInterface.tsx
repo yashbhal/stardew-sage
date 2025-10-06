@@ -14,6 +14,15 @@ type Message = {
   timestamp?: Date;
 };
 
+const PROMPT_SUGGESTIONS = [
+  'Best crops for Spring year 1?',
+  'Gift ideas for Sebastian?',
+  'How do I unlock the community center?',
+  'Efficient mining day plan?',
+  'Tips for perfect fishing?',
+  'What should I do on rainy days?',
+] as const;
+
 /**
  * ChatInterface Component
  * 
@@ -33,6 +42,7 @@ export default function ChatInterface() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activePrompt, setActivePrompt] = useState<string | null>(null);
   
   // Refs for DOM manipulation
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -44,25 +54,30 @@ export default function ChatInterface() {
   }, [messages]);
 
   // Form submission handler
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  const sendMessage = async (message: string, options: { clearInput?: boolean } = {}) => {
+    if (isLoading) return;
+    const { clearInput = true } = options;
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) return;
 
-    const userMessage: Message = { 
-      role: 'user', 
-      content: input,
-      timestamp: new Date()
+    const userMessage: Message = {
+      role: 'user',
+      content: trimmedMessage,
+      timestamp: new Date(),
     };
+
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
     setError(null);
+    if (clearInput) {
+      setInput('');
+    }
+    setIsLoading(true);
 
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: trimmedMessage }),
       });
 
       if (!response.ok) {
@@ -70,10 +85,10 @@ export default function ChatInterface() {
       }
 
       const data = await response.json();
-      const assistantMessage: Message = { 
-        role: 'assistant', 
+      const assistantMessage: Message = {
+        role: 'assistant',
         content: data.response,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (err) {
@@ -81,6 +96,26 @@ export default function ChatInterface() {
       setError('Sorry, something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
+      if (!clearInput) {
+        setInput('');
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    await sendMessage(input);
+  };
+
+  const handlePromptClick = async (prompt: string) => {
+    if (isLoading) return;
+    setActivePrompt(prompt);
+    setInput(prompt);
+    try {
+      await sendMessage(prompt, { clearInput: false });
+    } finally {
+      setActivePrompt(null);
     }
   };
 
@@ -230,12 +265,41 @@ export default function ChatInterface() {
           <div ref={messagesEndRef} />
         </div>
         
-        {/* Input Form */}
-        <form 
-          onSubmit={handleSubmit} 
-          className="p-2 sm:p-4 border-t-2 border-menu-border bg-menu-paper"
-        >
-          <div className="flex items-center gap-1 sm:gap-2">
+        {/* Smart Prompt Carousel + Input */}
+        <div className="border-t-2 border-menu-border bg-menu-paper px-2 sm:px-4 pt-3 sm:pt-4 pb-2 sm:pb-4">
+          <div className="mb-2 sm:mb-3">
+            <h2 className="sr-only">Smart Prompt Carousel</h2>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {PROMPT_SUGGESTIONS.map((prompt) => {
+                const isActive = activePrompt === prompt && isLoading;
+                return (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => handlePromptClick(prompt)}
+                    disabled={isLoading}
+                    aria-pressed={isActive}
+                    className={`
+                      font-pixel text-[11px] sm:text-xs px-2.5 sm:px-3.5 py-1.5 sm:py-2
+                      rounded-stardew-lg border-2 border-menu-border shadow-stardew-sm
+                      transition-all duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stardew-blue-400
+                      ${isActive
+                        ? 'bg-stardew-green-200 text-stardew-green-800 border-stardew-green-400 cursor-wait scale-95'
+                        : 'bg-menu-paper text-stardew-brown-800 hover:bg-stardew-green-50 hover:border-stardew-green-300 hover:shadow-stardew'
+                      }
+                      ${isLoading && !isActive ? 'opacity-60 cursor-not-allowed' : ''}
+                    `}
+                  >
+                    {prompt}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <form 
+            onSubmit={handleSubmit}
+            className="flex items-center gap-1 sm:gap-2"
+          >
             <input
               type="text"
               value={input}
@@ -267,8 +331,8 @@ export default function ChatInterface() {
                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
               </svg>
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
 
       {/* Feedback buttons at the bottom */}

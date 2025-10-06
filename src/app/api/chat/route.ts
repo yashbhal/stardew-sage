@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
  */
 async function fetchGeminiResponse(prompt: string, apiKey: string): Promise<string> {
   // Construct the API endpoint URL with the API key
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
   
   // Make the API request with proper headers and body format
   const response = await fetch(url, {
