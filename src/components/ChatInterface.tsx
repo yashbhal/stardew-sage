@@ -49,11 +49,13 @@ export default function ChatInterface() {
   const [error, setError] = useState<string | null>(null);
   const [activePrompt, setActivePrompt] = useState<string | null>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   
   // Refs for DOM manipulation
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -75,6 +77,14 @@ export default function ChatInterface() {
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Auto-scroll effect
@@ -129,6 +139,35 @@ export default function ChatInterface() {
         setInput('');
       }
       inputRef.current?.focus();
+    }
+  };
+
+  const handleCopyMessage = async (messageId: string, content: string) => {
+    if (!content.trim()) return;
+
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(content);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = content;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCopiedMessageId(messageId);
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+      copyTimeoutRef.current = setTimeout(() => {
+        setCopiedMessageId(null);
+      }, 2000);
+    } catch (copyError) {
+      console.error('Failed to copy message', copyError);
     }
   };
 
@@ -206,8 +245,38 @@ export default function ChatInterface() {
           
           {/* Timestamp */}
           {message.timestamp && (
-            <div className={`text-xs ${isUser ? 'text-stardew-blue-100' : 'text-stardew-brown-400'} text-right`}>
-              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <div className={`mt-2 flex items-center justify-end gap-2 text-xs ${isUser ? 'text-stardew-blue-100' : 'text-stardew-brown-400'}`}>
+              {!isUser && (
+                <>
+                  {copiedMessageId === messageKey && (
+                    <span className="text-[9px] font-body text-stardew-brown-500" aria-live="polite">
+                      Copied!
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleCopyMessage(messageKey, message.content)}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-stardew-sm border border-menu-border bg-white/80 text-stardew-brown-500 transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-stardew-blue-400 focus:ring-offset-1 focus:ring-offset-menu-paper"
+                    aria-label="Copy assistant response"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      className="h-3.5 w-3.5"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"
+                      />
+                    </svg>
+                  </button>
+                </>
+              )}
+              <time>
+                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </time>
             </div>
           )}
         </div>
