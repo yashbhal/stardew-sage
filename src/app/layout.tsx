@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter, VT323 } from "next/font/google";
+import Script from 'next/script'
 import { Analytics } from "@vercel/analytics/react"
 
 // Load Inter font for better readability
@@ -72,6 +73,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.variable} ${vt323.variable} antialiased`}>
+        <Script
+          src="https://cloud.umami.is/script.js"
+          data-website-id="bdcbea9d-f97a-421c-aeaf-7e3eca3b09e6"
+          strategy="afterInteractive"
+        />
         {children}
         <Analytics />
       </body>

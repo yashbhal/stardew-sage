@@ -36,6 +36,25 @@ const PROMPT_POOL = [
 const PROMPT_COUNT = 3;
 const SAVED_TIPS_STORAGE_KEY = 'stardew-sage-saved-tips';
 
+interface UmamiTracker {
+  (event: string, data?: Record<string, unknown>): void;
+  track?: (event: string, data?: Record<string, unknown>) => void;
+}
+
+declare global {
+  interface Window {
+    umami?: UmamiTracker;
+  }
+}
+
+const trackUmamiEvent = (event: string, data?: Record<string, unknown>) => {
+  if (typeof window === 'undefined') return;
+  const tracker = window.umami;
+  if (typeof tracker === 'function') {
+    tracker(event, data);
+  }
+};
+
 /**
  * ChatInterface Component
  * 
@@ -145,6 +164,7 @@ export default function ChatInterface() {
       setInput('');
     }
     setIsLoading(true);
+    trackUmamiEvent('message_sent');
 
     try {
       const response = await fetch('/api/chat', {
@@ -164,6 +184,9 @@ export default function ChatInterface() {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMessage]);
+      if (typeof window !== 'undefined') {
+        window.umami?.track?.('message_received');
+      }
     } catch (err) {
       console.error('Error:', err);
       setError('Sorry, something went wrong. Please try again.');
@@ -175,6 +198,9 @@ export default function ChatInterface() {
       inputRef.current?.focus();
     }
   };
+  if (typeof window !== 'undefined') {
+    window.umami?.track?.('message_sent');
+  }
 
   const handleCopyMessage = async (messageId: string, content: string) => {
     if (!content.trim()) return;
@@ -217,6 +243,7 @@ export default function ChatInterface() {
     setSavedTips(prev => {
       const exists = prev.find(tip => tip.content === message.content);
       if (exists) {
+        trackUmamiEvent('saved_tip_removed');
         return prev.filter(tip => tip.content !== message.content);
       }
 
@@ -231,12 +258,14 @@ export default function ChatInterface() {
         savedAt: new Date().toISOString(),
       };
 
+      trackUmamiEvent('saved_tip_added');
       return [newTip, ...prev];
     });
   };
 
   const handleRemoveTip = (tipId: string) => {
     setSavedTips(prev => prev.filter(tip => tip.id !== tipId));
+    trackUmamiEvent('saved_tip_removed');
   };
 
   const handleClearSavedTips = () => {
@@ -272,6 +301,9 @@ export default function ChatInterface() {
     if (isLoading) return;
     setActivePrompt(prompt);
     setInput(prompt);
+    if (typeof window !== 'undefined') {
+      window.umami?.track?.('prompt_clicked', { prompt });
+    }
     try {
       await sendMessage(prompt, { clearInput: false });
     } finally {
