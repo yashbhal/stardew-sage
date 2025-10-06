@@ -67,7 +67,7 @@ export function FeedbackButtons() {
   return (
     <div className="w-full max-w-2xl mx-auto opacity-90 hover:opacity-100 transition-all duration-300">
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
-        <p className="text-xs sm:text-sm font-pixel text-stardew-brown-600 whitespace-nowrap">
+        <p className="text-sm sm:text-base font-pixel text-stardew-brown-600 whitespace-nowrap">
           How do you like Stardew Sage?
         </p>
         
@@ -77,7 +77,7 @@ export function FeedbackButtons() {
             disabled={votedButtons.includes('love_website') || isLoading}
             className={`
               min-w-[100px] sm:min-w-[120px]
-              px-3 py-1.5 rounded text-xs font-pixel
+              px-3 py-1.5 rounded text-sm font-pixel
               border border-menu-border
               transition-all duration-300 ease-in-out
               transform hover:scale-[1.02] active:scale-[0.98]
@@ -97,7 +97,7 @@ export function FeedbackButtons() {
                 )}
               </span>
               <span className={`
-                px-2 py-0.5 rounded text-[10px] border min-w-[24px]
+                px-2 py-0.5 rounded text-xs border min-w-[24px]
                 transition-colors duration-300
                 ${votedButtons.includes('love_website')
                   ? 'bg-white/60 border-stardew-green-200 text-stardew-green-700'
@@ -114,7 +114,7 @@ export function FeedbackButtons() {
             disabled={votedButtons.includes('want_app') || isLoading}
             className={`
               min-w-[100px] sm:min-w-[120px]
-              px-3 py-1.5 rounded text-xs font-pixel
+              px-3 py-1.5 rounded text-sm font-pixel
               border border-menu-border
               transition-all duration-300 ease-in-out
               transform hover:scale-[1.02] active:scale-[0.98]
@@ -134,7 +134,7 @@ export function FeedbackButtons() {
                 )}
               </span>
               <span className={`
-                px-2 py-0.5 rounded text-[10px] border min-w-[24px]
+                px-2 py-0.5 rounded text-xs border min-w-[24px]
                 transition-colors duration-300
                 ${votedButtons.includes('want_app')
                   ? 'bg-white/60 border-stardew-blue-200 text-stardew-blue-700'
@@ -149,7 +149,7 @@ export function FeedbackButtons() {
       </div>
 
       {votedButtons.length > 0 && (
-        <p className="text-[10px] text-center mt-2 text-stardew-brown-500 font-pixel animate-fade-in">
+        <p className="text-xs text-center mt-2 text-stardew-brown-500 font-pixel animate-fade-in">
           Thanks for your feedback!
         </p>
       )}
