@@ -272,6 +272,50 @@ export default function ChatInterface() {
     setSavedTips([]);
   };
 
+  const formatTranscript = () => {
+    return messages
+      .map(message => {
+        const timestamp = message.timestamp instanceof Date
+          ? message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : '';
+        const speaker = message.role === 'user' ? 'You' : 'Stardew Sage';
+        const timePrefix = timestamp ? `[${timestamp}] ` : '';
+        return `${timePrefix}${speaker}: ${message.content}`;
+      })
+      .join('\n\n');
+  };
+
+  const handleCopyTranscript = async () => {
+    const transcript = formatTranscript();
+    if (!transcript.trim()) return;
+
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(transcript);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = transcript;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      trackUmamiEvent('transcript_copied');
+      setCopiedMessageId('transcript');
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+      copyTimeoutRef.current = setTimeout(() => {
+        setCopiedMessageId(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy transcript', error);
+    }
+  };
+
   const formatSavedTimestamp = (iso?: string | null) => {
     if (!iso) return '';
     const parsed = new Date(iso);
@@ -518,8 +562,33 @@ export default function ChatInterface() {
             </div>
             <h1 className="text-base sm:text-lg font-pixel tracking-pixel">Stardew Sage</h1>
           </div>
-          <div className="text-[10px] sm:text-xs font-pixel bg-stardew-green-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-stardew-sm">
-            Powered by Gemini
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={handleCopyTranscript}
+              className="flex items-center gap-1 rounded-stardew-sm border border-white/30 bg-white/10 px-2 py-1 text-[10px] sm:text-xs font-pixel tracking-pixel text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-1 focus:ring-offset-stardew-green-600"
+              aria-label="Copy entire conversation"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  fill="currentColor"
+                  d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"
+                />
+              </svg>
+              <span>Copy chat</span>
+              {copiedMessageId === 'transcript' && (
+                <span className="text-[9px] font-body text-white/80" aria-live="polite">Copied!</span>
+              )}
+            </button>
+            <div className="text-[10px] sm:text-xs font-pixel bg-stardew-green-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-stardew-sm">
+              Powered by Gemini
+            </div>
           </div>
         </header>
         
