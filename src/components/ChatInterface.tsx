@@ -443,20 +443,19 @@ export default function ChatInterface() {
               <ul className="space-y-3 max-h-60 overflow-y-auto pr-1">
                 {savedTips.map(tip => (
                   <li key={tip.id} className="rounded-stardew border border-menu-border bg-white/90 p-3">
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="text-sm font-body text-stardew-brown-700 whitespace-pre-wrap">{tip.content}</div>
                       <button
                         type="button"
                         onClick={() => handleRemoveTip(tip.id)}
-                        className="shrink-0 rounded-stardew-sm border border-stardew-brown-200 bg-stardew-brown-50 px-2 py-1 text-[10px] font-pixel uppercase tracking-pixel text-stardew-brown-600 hover:bg-stardew-brown-100 focus:outline-none focus:ring-1 focus:ring-stardew-blue-400"
+                        className="shrink-0 rounded-stardew border-2 border-stardew-brown-200 bg-stardew-brown-50 px-3 py-1.5 text-[11px] sm:text-xs font-pixel uppercase tracking-pixel text-stardew-brown-600 hover:bg-stardew-brown-100 focus:outline-none focus:ring-2 focus:ring-stardew-blue-400 focus:ring-offset-1 focus:ring-offset-white"
                         aria-label="Remove saved tip"
                       >
                         Remove
                       </button>
                     </div>
-                    <div className="mt-2 flex items-center justify-between text-[10px] font-body text-stardew-brown-400">
-                      <span>Saved {formatSavedTimestamp(tip.savedAt)}</span>
-                      {tip.timestamp && <span>Original {formatSavedTimestamp(tip.timestamp)}</span>}
+                    <div className="mt-2 text-[11px] font-body text-stardew-brown-400">
+                      Saved {formatSavedTimestamp(tip.savedAt)}
                     </div>
                   </li>
                 ))}
