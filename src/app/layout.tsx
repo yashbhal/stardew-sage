@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Inter } from "next/font/google";
+import { Inter, VT323 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react"
 
 // Load Inter font for better readability
@@ -8,6 +8,13 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
+});
+
+const vt323 = VT323({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-pixel",
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -64,7 +71,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${inter.variable} antialiased`}>
+      <body className={`${inter.variable} ${vt323.variable} antialiased`}>
         {children}
         <Analytics />
       </body>

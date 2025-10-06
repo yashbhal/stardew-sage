@@ -43,15 +43,39 @@ export default function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activePrompt, setActivePrompt] = useState<string | null>(null);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   
   // Refs for DOM manipulation
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    // Fallback for Safari < 14
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   // Auto-scroll effect
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  }, [messages, prefersReducedMotion]);
 
   // Form submission handler
   const sendMessage = async (message: string, options: { clearInput?: boolean } = {}) => {
@@ -99,6 +123,7 @@ export default function ChatInterface() {
       if (!clearInput) {
         setInput('');
       }
+      inputRef.current?.focus();
     }
   };
 
@@ -117,16 +142,20 @@ export default function ChatInterface() {
     } finally {
       setActivePrompt(null);
     }
+    inputRef.current?.focus();
   };
 
   // Message renderer
   const renderMessage = (message: Message, index: number) => {
     const isUser = message.role === 'user';
-    
+    const messageKey = message.timestamp ? `${message.role}-${message.timestamp.toISOString()}` : `${message.role}-${index}`;
+
     return (
-      <div
-        key={index}
-        className={`mb-4 animate-fadeIn ${isUser ? 'flex justify-end' : 'flex justify-start'}`}
+      <article
+        key={messageKey}
+        className={`mb-4 ${prefersReducedMotion ? '' : 'animate-fadeIn'} ${isUser ? 'flex justify-end' : 'flex justify-start'}`}
+        aria-label={`${isUser ? 'Your' : 'Stardew Sage'} message`}
+        role="group"
       >
         {/* Bot avatar */}
         {!isUser && (
@@ -145,13 +174,13 @@ export default function ChatInterface() {
         
         {/* Message content */}
         <div className={`
-          max-w-[80%] sm:max-w-[70%] rounded-stardew-lg p-3 shadow-stardew-sm
+          max-w-[80%] sm:max-w-[68%] rounded-stardew-lg px-4 py-3 shadow-stardew-sm
           ${isUser 
             ? 'bg-stardew-blue-400 text-white rounded-tr-none' 
             : 'bg-menu-paper border border-menu-border rounded-tl-none'
           }
         `}>
-          <div className={`mb-1 ${isUser ? 'font-pixel text-base' : 'font-body text-base'}`}>
+          <div className={`mb-2 ${isUser ? 'font-pixel text-base leading-relaxed' : 'font-body text-base leading-relaxed'}`}>
             {isUser ? (
               <p>{message.content}</p>
             ) : (
@@ -183,16 +212,22 @@ export default function ChatInterface() {
             </div>
           </div>
         )}
-      </div>
+      </article>
     );
   };
 
+  const errorMessageId = error ? 'chat-error-message' : undefined;
+
   return (
-    <div className="flex flex-col space-y-4 max-w-3xl mx-auto px-3 sm:px-4 py-2 min-h-screen">
+    <div className="flex flex-col space-y-6 sm:space-y-8 max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 min-h-[100dvh]">
       {/* Chat interface */}
-      <div className="flex flex-col h-[85vh] sm:h-[80vh] bg-[#F6F1E5] rounded-stardew-lg overflow-hidden shadow-stardew-xl border-2 border-menu-border">
+      <section
+        className="flex flex-col h-[85vh] sm:h-[80vh] bg-[#F6F1E5] rounded-stardew-lg overflow-hidden shadow-stardew-xl border-2 border-menu-border"
+        aria-label="Chat conversation"
+        id="chat-interface"
+      >
         {/* Header */}
-        <div className="bg-gradient-to-r from-stardew-green-500 to-stardew-green-600 px-3 py-2 sm:p-3 text-white flex items-center justify-between border-b-2 border-menu-border">
+        <header className={`bg-gradient-to-r from-stardew-green-500 to-stardew-green-600 px-3 py-2 sm:p-3 text-white flex items-center justify-between border-b-2 border-menu-border ${prefersReducedMotion ? '' : 'animate-slideUp'}`}>
           <div className="flex items-center">
             <div className="w-7 h-7 sm:w-8 sm:h-8 mr-2 sm:mr-2.5 relative bg-menu-paper rounded-full overflow-hidden border-2 border-menu-border shadow-stardew">
               <Image 
@@ -209,23 +244,29 @@ export default function ChatInterface() {
           <div className="text-[10px] sm:text-xs font-pixel bg-stardew-green-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-stardew-sm">
             Powered by Gemini
           </div>
-        </div>
+        </header>
         
         {/* Messages Container */}
         <div 
           ref={chatContainerRef}
-          className="flex-1 p-2 sm:p-4 overflow-y-auto bg-paper-texture bg-repeat bg-[#F6F1E5] bg-opacity-90 space-y-2"
+          className="flex-1 p-3 sm:p-5 overflow-y-auto bg-paper-texture bg-repeat bg-[#F6F1E5] bg-opacity-90 space-y-3 sm:space-y-4"
+          role="log"
+          aria-live="polite"
+          aria-atomic="false"
+          tabIndex={0}
+          aria-label="Stardew Sage conversation"
+          id="chat-log"
         >
           {messages.map(renderMessage)}
           
           {/* Loading indicator */}
           {isLoading && (
-            <div className="flex justify-start mb-4">
+            <div className="flex justify-start mb-4" role="status" aria-live="polite" aria-label="Stardew Sage is preparing a response">
               <div className="flex-shrink-0 mr-2 sm:mr-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-menu-paper border-2 border-menu-border shadow-stardew-sm overflow-hidden relative">
                   <Image 
                     src="/icons/stardew-chicken-icon.ico" 
-                    alt="LOADING" 
+                    alt="Loading response" 
                     fill
                     sizes="(max-width: 640px) 32px, 40px"
                     className="object-cover"
@@ -234,9 +275,13 @@ export default function ChatInterface() {
               </div>
               <div className="bg-menu-paper border border-menu-border rounded-stardew-lg rounded-tl-none p-2 sm:p-3 shadow-stardew-sm">
                 <div className="flex items-center space-x-1.5 sm:space-x-2">
-                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-stardew-brown-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-stardew-brown-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-stardew-brown-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  {[0, 150, 300].map((delay) => (
+                    <span
+                      key={delay}
+                      className={`w-1.5 h-1.5 sm:w-2 sm:h-2 bg-stardew-brown-400 rounded-full ${prefersReducedMotion ? '' : 'animate-bounce'}`}
+                      style={{ animationDelay: `${delay}ms` }}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -244,7 +289,7 @@ export default function ChatInterface() {
           
           {/* Error message */}
           {error && (
-            <div className="flex justify-start mb-4">
+            <div className="flex justify-start mb-4" role="alert" id={errorMessageId}>
               <div className="flex-shrink-0 mr-2 sm:mr-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-menu-paper border-2 border-menu-border shadow-stardew-sm overflow-hidden relative">
                   <Image 
@@ -280,7 +325,7 @@ export default function ChatInterface() {
                     disabled={isLoading}
                     aria-pressed={isActive}
                     className={`
-                      font-pixel text-[11px] sm:text-xs px-2.5 sm:px-3.5 py-1.5 sm:py-2
+                      font-pixel text-[11px] sm:text-xs px-3 sm:px-4 py-2 sm:py-2.5 min-h-[44px]
                       rounded-stardew-lg border-2 border-menu-border shadow-stardew-sm
                       transition-all duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stardew-blue-400
                       ${isActive
@@ -298,21 +343,27 @@ export default function ChatInterface() {
           </div>
           <form 
             onSubmit={handleSubmit}
-            className="flex items-center gap-1 sm:gap-2"
+            className="flex items-center gap-2 sm:gap-3"
+            aria-label="Send a message to Stardew Sage"
+            aria-controls="chat-log"
           >
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about Stardew Valley..."
-              className="h-10 sm:h-11 flex-1 px-3 sm:px-4 text-sm sm:text-base rounded-stardew-lg border-2 border-menu-border focus:outline-none focus:border-stardew-green-400 font-body text-stardew-brown-800 placeholder-stardew-brown-400 bg-white transition-colors"
+              className="h-11 sm:h-12 min-h-[44px] flex-1 px-3 sm:px-4 text-sm sm:text-base rounded-stardew-lg border-2 border-menu-border focus:outline-none focus:border-stardew-green-400 font-body text-stardew-brown-800 placeholder-stardew-brown-400 bg-white transition-colors"
               disabled={isLoading}
+              aria-label="Message input"
+              ref={inputRef}
+              aria-controls="chat-log"
+              aria-describedby={errorMessageId}
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
               className={`
-                h-10 sm:h-11 min-w-[4.5rem] sm:min-w-[5.5rem] px-3 sm:px-4
+                h-11 sm:h-12 min-h-[44px] min-w-[4.5rem] sm:min-w-[5.5rem] px-3 sm:px-4
                 rounded-stardew-lg border-2 border-menu-border
                 font-pixel text-xs sm:text-sm
                 transition-all duration-300 ease-in-out
@@ -325,6 +376,7 @@ export default function ChatInterface() {
                 }
               `}
               aria-label="Send message"
+              aria-controls="chat-log"
             >
               <span className="hidden sm:inline">Send</span>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -333,7 +385,7 @@ export default function ChatInterface() {
             </button>
           </form>
         </div>
-      </div>
+      </section>
 
       {/* Feedback buttons at the bottom */}
       <div className="w-full max-w-2xl mx-auto pb-4">

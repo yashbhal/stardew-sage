@@ -112,9 +112,9 @@ module.exports = {
              * Improved font settings for better readability while maintaining the game's charm
              */
             fontFamily: {
-                'pixel': ['VT323', 'monospace', 'ui-monospace'],
+                'pixel': ['var(--font-pixel)', 'VT323', 'monospace', 'ui-monospace'],
                 'stardew': ['Stardew', 'serif', 'ui-serif'],
-                'body': ['Inter', 'system-ui', 'sans-serif'],
+                'body': ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
             },
             fontSize: {
                 'xs': ['0.875rem', { lineHeight: '1.25rem' }],
