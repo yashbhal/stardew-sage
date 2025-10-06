@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
  * Stardew Sage API Route Handler
@@ -29,6 +30,22 @@ const apiKey = process.env.GEMINI_API_KEY;
  */
 export async function POST(request: NextRequest) {
   try {
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const clientIdentifier = forwardedFor?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip') ?? 'unknown';
+
+    const rateLimit = await checkRateLimit(clientIdentifier);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil(rateLimit.retryAfter / 1000).toString(),
+          },
+        },
+      );
+    }
+
     // Validate API key configuration to prevent runtime errors
     if (!apiKey) {
       console.error('Missing Gemini API key in environment variables');
