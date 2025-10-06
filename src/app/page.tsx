@@ -15,7 +15,7 @@ import Image from 'next/image';
  */
 export default function Home() {
   return (
-    <main className="min-h-screen p-4 md:p-8 bg-gradient-to-b from-stardew-brown-100 to-[#F6F1E5] bg-paper-texture bg-repeat">
+    <main className="min-h-screen p-4 md:p-8 from-stardew-brown-100 to-[#F6F1E5] bg-paper-texture bg-repeat">
       <div className="max-w-5xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-8 animate-slideUp bg-menu-paper border-2 border-menu-border rounded-stardew-lg p-6 shadow-stardew">
