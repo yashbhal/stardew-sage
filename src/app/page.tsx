@@ -1,4 +1,5 @@
 import ChatInterface from '@/components/ChatInterface';
+import FooterLinks from '@/components/FooterLinks';
 import Image from 'next/image';
 
 /**
@@ -59,6 +60,8 @@ export default function Home() {
           {/* Legal Disclaimer */}
           <p>Not affiliated with ConcernedApe or Stardew Valley</p>
           <p>Made with ❤️ for the Stardew Valley community</p>
+
+          <FooterLinks />
         </footer>
       </div>
     </main>
