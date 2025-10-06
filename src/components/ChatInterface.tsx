@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
-import { FeedbackButtons } from './FeedbackButtons';
 
 /**
  * Message Type Definition
@@ -219,7 +218,7 @@ export default function ChatInterface() {
   const errorMessageId = error ? 'chat-error-message' : undefined;
 
   return (
-    <div className="flex flex-col space-y-6 sm:space-y-8 max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 min-h-[100dvh]">
+    <div className="flex flex-col max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 min-h-[100dvh]">
       {/* Chat interface */}
       <section
         className="flex flex-col h-[85vh] sm:h-[80vh] bg-[#F6F1E5] rounded-stardew-lg overflow-hidden shadow-stardew-xl border-2 border-menu-border"
@@ -386,11 +385,6 @@ export default function ChatInterface() {
           </form>
         </div>
       </section>
-
-      {/* Feedback buttons at the bottom */}
-      <div className="w-full max-w-2xl mx-auto pb-4">
-        <FeedbackButtons />
-      </div>
     </div>
   );
 }

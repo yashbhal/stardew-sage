@@ -54,7 +54,7 @@ export default function Home() {
               height={20}
               className="inline-block"
             />
-            <span>Gemini 1.5 Flash</span>
+            <span>Gemini 2.0 Flash</span>
           </div>    
           {/* Legal Disclaimer */}
           <p>Not affiliated with ConcernedApe or Stardew Valley</p>
