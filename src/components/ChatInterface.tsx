@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { ChatHeader } from '@/components/chat/ChatHeader';
 import { ChatMessage } from '@/components/chat/ChatMessage';
 import { SavedTipsPanel } from '@/components/chat/SavedTipsPanel';
@@ -19,7 +19,6 @@ const INITIAL_ASSISTANT_MESSAGE: Message = {
   role: 'assistant',
   content:
     "Hi there! I'm Stardew Sage, your friendly Stardew Valley assistant. Ask me anything about crops, villagers, fishing, mining, or any other aspect of the game!",
-  timestamp: new Date(),
 };
 
 const shufflePrompts = (pool: readonly PromptSuggestion[]) => {
@@ -78,14 +77,17 @@ export default function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const promptSuggestions = useMemo(
-    () => shufflePrompts(PROMPT_POOL).slice(0, PROMPT_COUNT),
-    [],
+  const [promptSuggestions, setPromptSuggestions] = useState<PromptSuggestion[]>(() =>
+    PROMPT_POOL.slice(0, PROMPT_COUNT),
   );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
   }, [messages, prefersReducedMotion]);
+
+  useEffect(() => {
+    setPromptSuggestions(shufflePrompts(PROMPT_POOL).slice(0, PROMPT_COUNT));
+  }, []);
 
   useEffect(
     () => () => {
