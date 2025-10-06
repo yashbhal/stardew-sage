@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 
@@ -13,14 +13,20 @@ type Message = {
   timestamp?: Date;
 };
 
-const PROMPT_SUGGESTIONS = [
+const PROMPT_POOL = [
   'Best crops for Spring year 1?',
+  'Optimal Spring crop rotations?',
   'Gift ideas for Sebastian?',
+  'Easiest heart events to unlock?',
   'How do I unlock the community center?',
+  'Fastest way to earn gold early?',
   'Efficient mining day plan?',
+  'Where to find rare fish today?',
   'Tips for perfect fishing?',
   'What should I do on rainy days?',
 ] as const;
+
+const PROMPT_COUNT = 3;
 
 /**
  * ChatInterface Component
@@ -132,7 +138,16 @@ export default function ChatInterface() {
     await sendMessage(input);
   };
 
-  const handlePromptClick = async (prompt: string) => {
+  const promptSuggestions = useMemo(() => {
+    const pool = [...PROMPT_POOL];
+    for (let i = pool.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, PROMPT_COUNT);
+  }, []);
+
+  const handlePromptClick = async (prompt: typeof PROMPT_POOL[number]) => {
     if (isLoading) return;
     setActivePrompt(prompt);
     setInput(prompt);
@@ -314,7 +329,7 @@ export default function ChatInterface() {
           <div className="mb-2 sm:mb-3">
             <h2 className="sr-only">Smart Prompt Carousel</h2>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
-              {PROMPT_SUGGESTIONS.map((prompt) => {
+              {promptSuggestions.map((prompt) => {
                 const isActive = activePrompt === prompt && isLoading;
                 return (
                   <button
